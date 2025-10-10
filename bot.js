@@ -1,42 +1,43 @@
-import 'dotenv/config';
-import TelegramBot from 'node-telegram-bot-api';
-import { getBestTokenInfo } from './services/tokenFallback.js';
+import TelegramBot from "node-telegram-bot-api";
+import dotenv from "dotenv";
+import { getBestTokenInfo } from "./tokenFallback.js";
+
+dotenv.config();
 
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
-console.log('🤖 Sol Trading Bot started...');
 
-const solanaAddrRe = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+console.log("✅ Sol Trading Bot has started...");
 
-bot.on('message', async (msg) => {
+bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text?.trim();
 
-  if (!text || !solanaAddrRe.test(text)) return;
+  // Only react if message looks like a Solana CA
+  if (!text || text.length < 30) return;
 
-  bot.sendMessage(chatId, `🔍 Fetching token info for:\n<code>${text}</code>`, {
-    parse_mode: 'HTML'
-  });
+  bot.sendMessage(chatId, "🔍 Fetching token info...");
 
-  const info = await getBestTokenInfo(text);
+  try {
+    const info = await getBestTokenInfo(text);
 
-  if (!info) {
-    bot.sendMessage(chatId, '❌ Could not fetch token info for this CA.');
-    return;
+    if (!info) {
+      return bot.sendMessage(chatId, "⚠️ Token not found or no market data available.");
+    }
+
+    const reply = `
+📊 *${info.name}* — ${info.symbol}
+
+💰 *Price:* $${Number(info.priceUsd).toFixed(6)}
+💧 *Liquidity:* $${info.liquidityUsd ? "$" + info.liquidityUsd.toLocaleString() : "N/A"}
+📈 *24h Volume:* $${info.volume24hUsd ? info.volume24hUsd.toLocaleString() : "N/A"}
+
+🟢 *Source:* ${info.source}
+🔗 [View Chart](${info.url})
+    `;
+
+    bot.sendMessage(chatId, reply, { parse_mode: "Markdown" });
+  } catch (error) {
+    console.error(error);
+    bot.sendMessage(chatId, "❌ Error fetching token info.");
   }
-
-  const reply = `
-💎 <b>${info.symbol}</b> — ${info.name}
-📡 <b>Source:</b> ${info.source}
-
-💰 <b>Price:</b> $${Number(info.priceUsd).toFixed(6)}
-💧 <b>Liquidity:</b> $${Number(info.liquidityUsd).toLocaleString()}
-📊 <b>24h Volume:</b> $${Number(info.volume24hUsd).toLocaleString()}
-
-🔗 <a href="${info.url}">View Details</a>
-  `;
-
-  bot.sendMessage(chatId, reply.trim(), {
-    parse_mode: 'HTML',
-    disable_web_page_preview: true
-  });
 });
