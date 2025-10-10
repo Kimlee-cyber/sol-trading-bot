@@ -1,15 +1,15 @@
 {
   "name": "sol-trading-bot",
   "version": "1.0.0",
-  "description": "Telegram bot that detects Solana contract addresses and fetches token info",
-  "main": "bot.js",
+  "description": "Solana trading bot that fetches token info from DEX Screener and Jupiter",
   "type": "module",
+  "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
   },
   "dependencies": {
-    "axios": "^1.7.2",
-    "dotenv": "^16.3.1",
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
     "node-telegram-bot-api": "^0.61.0"
   }
 }
